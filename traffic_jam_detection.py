@@ -1,87 +1,73 @@
 import cv2
+import torch
 import numpy as np
-from time import sleep
+from time import time
 
-# Parameters for contour filtering
-min_width = 80   # Minimum width of the rectangle for a vehicle
-min_height = 80  # Minimum height of the rectangle for a vehicle
-delay = 60       # FPS of the video
+# Load YOLOv5 model (automatically downloads weights if not present)
+model = torch.hub.load('ultralytics/yolov5', 'yolov5s', pretrained=True)
+
+# Set the detection confidence threshold
+model.conf = 0.4  # Confidence threshold (adjust as needed)
 
 # Traffic jam threshold
-traffic_jam_threshold = 20
+traffic_jam_threshold = 12
 
-# Load video
+# Capture video
 cap = cv2.VideoCapture('video.mp4')
 
-# Use MOG2 for background subtraction with shadow detection enabled
-background_subtractor = cv2.createBackgroundSubtractorMOG2(history=100, varThreshold=40, detectShadows=True)
+# Process video at 1 FPS
+fps = 1
+prev_time = 0
 
-def process_single_frame(frame):
-    """
-    Processes a single frame to detect vehicles and returns processed frame and vehicle count.
-
-    Args:
-        frame (numpy.ndarray): The current video frame.
-
-    Returns:
-        processed_frame (numpy.ndarray): Frame with bounding boxes and labels.
-        cars_in_frame (int): The count of detected vehicles in the frame.
-        traffic_status (str): Traffic status message ("Traffic Jam" or "Normal Traffic").
-    """
-    height, width, _ = frame.shape
-
-    # Apply background subtraction and noise reduction
-    fg_mask = background_subtractor.apply(frame)
-    fg_mask = cv2.GaussianBlur(fg_mask, (5, 5), 0)
-    fg_mask = cv2.morphologyEx(fg_mask, cv2.MORPH_OPEN, np.ones((5, 5), np.uint8))
-    fg_mask = cv2.dilate(fg_mask, np.ones((5, 5), np.uint8))
-
-    # Find contours in the mask
-    contours, _ = cv2.findContours(fg_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
-
-    # Initialize car count for this frame
-    cars_in_frame = 0
-
-    # Process each contour to detect vehicles
-    for contour in contours:
-        (x, y, w, h) = cv2.boundingRect(contour)
-        # Filter contours by size
-        if w >= min_width and h >= min_height:
-            # Increment car count
-            cars_in_frame += 1
-
-            # Draw bounding box around each detected vehicle
-            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
-
-    # Determine traffic status based on car count
-    traffic_status = "Traffic Jam" if cars_in_frame > traffic_jam_threshold else "Normal Traffic"
-
-    # Display vehicle count and traffic status on the frame
-    cv2.putText(frame, "VEHICLE COUNT: " + str(cars_in_frame), (50, 70), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 0, 255), 5)
-    cv2.putText(frame, "TRAFFIC STATUS: " + traffic_status, (50, 130), cv2.FONT_HERSHEY_SIMPLEX, 2, (0, 255, 255), 5)
-    
-    return frame, cars_in_frame, traffic_status
-
-# Main video loop
-while True:
+while cap.isOpened():
     ret, frame = cap.read()
     if not ret:
         break
 
-    # Control the frame rate
-    sleep(1 / delay)
+    # Get the current timestamp in seconds
+    current_time = time()
+    
+    # Only process the frame if 1 second has passed
+    if current_time - prev_time >= 1.0:
+        prev_time = current_time
 
-    # Process each frame independently
-    processed_frame, cars_in_frame, traffic_status = process_single_frame(frame)
+        # Resize frame for faster processing (optional)
+        frame = cv2.resize(frame, (800, 600))
 
-    # Show the processed frame
-    cv2.imshow("Traffic Detection", processed_frame)
+        # Perform vehicle detection with YOLO
+        results = model(frame)
+        detections = results.pred[0]
 
-    # Break the loop if 'Esc' key is pressed
-    if cv2.waitKey(1) == 27:  # 27 is the ASCII code for 'Esc'
+        # Count vehicles in the current frame
+        vehicle_count = 0
+
+        for det in detections:
+            # Extract bounding box and confidence
+            x1, y1, x2, y2, confidence, cls = map(int, det[:6])
+
+            # Filter for vehicles (e.g., cars, trucks)
+            if cls in [2, 5, 7]:  # Class IDs for cars, buses, and trucks in COCO dataset
+                vehicle_count += 1
+                # Draw bounding box
+                cv2.rectangle(frame, (x1, y1), (x2, y2), (0, 255, 0), 2)
+                cv2.putText(frame, f'Vehicle {confidence:.2f}', (x1, y1 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 255, 0), 2)
+
+        # Check for traffic jam
+        if vehicle_count > traffic_jam_threshold:
+            traffic_status = "Traffic Jam"
+        else:
+            traffic_status = "Normal Traffic"
+
+        # Display vehicle count and traffic status
+        cv2.putText(frame, f"Vehicle Count: {vehicle_count}", (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+        cv2.putText(frame, traffic_status, (10, 80), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2)
+
+        # Show the result
+        cv2.imshow("Vehicle Detection and Counting", frame)
+
+    # Break on 'q' key
+    if cv2.waitKey(1) & 0xFF == ord('q'):
         break
 
-# Release resources
 cap.release()
 cv2.destroyAllWindows()
-
