@@ -1,0 +1,124 @@
+/* styles.css */
+
+body {
+    font-family: Arial, sans-serif;
+    background: linear-gradient(145deg, #6b4bb2, #9268d4);
+    color: #333;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    overflow: hidden;
+  }
+  
+  .navbar {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    padding: 15px;
+    background-color: rgba(90, 61, 146, 0.9);
+  }
+  
+  .navbar a {
+    color: white;
+    text-decoration: none;
+  }
+  
+  .score {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  
+  .score-number {
+    background-color: #fff;
+    color: #6b4bb2;
+    padding: 3px 8px;
+    border-radius: 5px;
+  }
+  
+  .complaint-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    text-align: center;
+  }
+  
+  .complaint-form {
+    background-color: rgba(255, 255, 255, 0.1);
+    padding: 30px;
+    border-radius: 20px;
+    width: 300px;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    color: white;
+  }
+  
+  .complaint-form h2 {
+    margin-bottom: 20px;
+    font-weight: bold;
+  }
+  
+  .complaint-form label {
+    display: block;
+    text-align: left;
+    margin-top: 10px;
+    color: #ddd;
+  }
+  
+  .complaint-form input[type="text"] {
+    width: 100%;
+    padding: 8px;
+    margin-top: 5px;
+    border-radius: 5px;
+    border: none;
+    outline: none;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+  }
+  
+  .upload-section {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  
+  .upload-label {
+    font-size: 1.5em;
+    color: white;
+    cursor: pointer;
+  }
+  
+  .submit-btn {
+    width: 100%;
+    padding: 10px;
+    margin-top: 15px;
+    border-radius: 5px;
+    border: none;
+    background-color: #6b4bb2;
+    color: white;
+    font-size: 1em;
+    cursor: pointer;
+  }
+  
+  .submit-btn:hover {
+    background-color: #7e5ac8;
+  }
+  
+  .journey-link {
+    display: block;
+    margin-top: 20px;
+    color: #ddd;
+    text-decoration: none;
+  }
+  
+  .journey-link:hover {
+    color: white;
+  }
+  
